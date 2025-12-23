@@ -136,45 +136,52 @@ def label_congestion(running):
 
 
 # ======================
-# 1️⃣ 데이터 생성
+# 모델 초기화 및 학습
 # ======================
-print("▶ 시뮬레이션 중...")
-df = pd.concat([
-    simulate("men", MEN_POP),
-    simulate("women", WOMEN_POP)
-], ignore_index=True)
+def train_model():
+    print("▶ 시뮬레이션 중...")
+    df = pd.concat([
+        simulate("men", MEN_POP),
+        simulate("women", WOMEN_POP)
+    ], ignore_index=True)
+    df["congestion"] = df["running_washers"].apply(label_congestion)
+    
+    X = df[["hour", "day_of_week", "is_weekend"]]
+    y = df["congestion"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+    
+    model = Pipeline([
+        ("scaler", StandardScaler()),
+        ("mlp", MLPClassifier(
+            hidden_layer_sizes=(64, 32),
+            activation="relu",
+            solver="adam",
+            alpha=0.001,
+            max_iter=500,
+            early_stopping=True,
+            random_state=42
+        ))
+    ])
+    
+    print("▶ 모델 학습 중 (MLP)...")
+    model.fit(X_train, y_train)
+    
+    print("\n▶ 평가 결과")
+    print(classification_report(y_test, model.predict(X_test)))
+    
+    return model
 
-df["congestion"] = df["running_washers"].apply(label_congestion)
+# 모듈 레벨 변수 (lazy loading)
+model = None
 
-# ======================
-# 2️⃣ 모델 학습 (미래 예측용)
-# ======================
-X = df[["hour", "day_of_week", "is_weekend"]]
-y = df["congestion"]
-
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=42, stratify=y
-)
-model = Pipeline([
-    ("scaler", StandardScaler()),
-    ("mlp", MLPClassifier(
-        hidden_layer_sizes=(64, 32),  # ⭐ 핵심
-        activation="relu",
-        solver="adam",
-        alpha=0.001,                  # L2 regularization
-        max_iter=500,
-        early_stopping=True,
-        random_state=42
-    ))
-])
-
-print("▶ 모델 학습 중 (MLP)...")
-model.fit(X_train, y_train)
-
-from sklearn.metrics import classification_report
-
-print("\n▶ 평가 결과")
-print(classification_report(y_test, model.predict(X_test)))
+def get_model():
+    """모델을 lazy loading으로 가져옵니다"""
+    global model
+    if model is None:
+        model = train_model()
+    return model
 
 # ======================
 # 3️⃣ 날짜 선택 → 하루 전체 예측
@@ -199,13 +206,13 @@ def predict_day(model, target_date: date):
 # ======================
 # 4️⃣ UI 출력용
 # ======================
-result = predict_day(model, date(2025, 12, 23))
-
-peak_hour = result.loc[result["predicted_congestion"].idxmax(), "hour"]
-recommend_hour = result.loc[result["predicted_congestion"].idxmin(), "hour"]
-
-print("\n▶ UI 출력용 결과")
-print(f"🔥 {peak_hour}시는 매우 혼잡할 예정이에요")
-print(f"👍 {recommend_hour}시 이후 이용을 추천해요")
+if __name__ == "__main__":
+    m = get_model()
+    result = predict_day(m, date(2025, 12, 23))
+    peak_hour = result.loc[result["predicted_congestion"].idxmax(), "hour"]
+    recommend_hour = result.loc[result["predicted_congestion"].idxmin(), "hour"]
+    print("\n▶ UI 출력용 결과")
+    print(f"🔥 {peak_hour}시는 매우 혼잡할 예정이에요")
+    print(f"👍 {recommend_hour}시 이후 이용을 추천해요")
 
 
