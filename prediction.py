@@ -6,7 +6,7 @@ import joblib
 # =============================
 # 1. 원본 데이터 로드
 # =============================
-df = pd.read_csv("laundry_usage_mock.csv")
+df = pd.read_csv("data/laundry_usage_mock.csv")
 
 # =============================
 # 2. 요일 × 시간 slot_df 생성
@@ -94,7 +94,7 @@ model.fit(X_train, y_train)
 # =============================
 # 6. 저장
 # =============================
-slot_df.to_csv("slot_df.csv", index=False)
-joblib.dump(model, "congestion_model.pkl")
+slot_df.to_csv("data/slot_df.csv", index=False)
+joblib.dump(model, "model/congestion_model.pkl")
 
 print("✅ slot_df 생성 + 혼잡도 모델 학습 완료")

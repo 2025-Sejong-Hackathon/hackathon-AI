@@ -60,6 +60,6 @@ for _ in range(4000):
     })
 
 df = pd.DataFrame(records)
-df.to_csv("laundry_usage_mock.csv", index=False)
+df.to_csv("data/laundry_usage_mock.csv", index=False)
 
 print("✅ 요일 기반 가상 데이터 생성 완료")

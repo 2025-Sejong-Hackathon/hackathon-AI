@@ -4,8 +4,8 @@ import joblib
 # =============================
 # 1. 모델 & 데이터 로드
 # =============================
-model = joblib.load("congestion_model.pkl")
-slot_df = pd.read_csv("slot_df.csv")
+model = joblib.load("model/congestion_model.pkl")
+slot_df = pd.read_csv("data/slot_df.csv")
 
 FEATURES = [
     "hour",
@@ -61,6 +61,6 @@ print("🔍 혼잡도 예측 결과 (상위 20개)")
 print(pred_df.head(20))
 
 # 필요하면 저장
-pred_df.to_csv("predicted_congestion.csv", index=False)
+pred_df.to_csv("data/predicted_congestion.csv", index=False)
 
 print("✅ slot_df 기반 혼잡도 예측 완료")
