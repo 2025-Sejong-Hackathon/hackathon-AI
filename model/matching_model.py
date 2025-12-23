@@ -106,7 +106,21 @@ class DormMatchAI_Server:
         with open(self.data_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
-        self.users_df = pd.DataFrame(data)
+        # 필수 필드가 모두 있는 완전한 데이터만 필터링
+        required_fields = ['student_id', 'gender'] + self.feature_cols
+        valid_data = []
+        
+        for record in data:
+            # 모든 필수 필드가 있는지 확인
+            if all(field in record for field in required_fields):
+                valid_data.append(record)
+        
+        print(f"✅ 전체 {len(data)}개 중 유효한 데이터 {len(valid_data)}개 로드")
+        
+        if len(valid_data) == 0:
+            raise ValueError("유효한 데이터가 없습니다.")
+        
+        self.users_df = pd.DataFrame(valid_data)
 
         # 1. 정규화 (Fit)
         features_norm = self.scaler.fit_transform(self.users_df[self.feature_cols])
@@ -134,7 +148,8 @@ class DormMatchAI_Server:
         for i, col in enumerate(self.feature_cols):
             weighted_input[:, i] *= self.weights[col]
 
-        return weighted_input # numpy array (1, n_features)
+        # DataFrame으로 변환하여 feature names 유지
+        return pd.DataFrame(weighted_input, columns=self.feature_cols)
 
     def explain_match_detail(self, user_data: dict, partner_row: pd.Series):
         """상세 비교 로직"""
@@ -185,6 +200,10 @@ class DormMatchAI_Server:
                 (self.users_df['student_id'] != target_student_id) &
                 (self.users_df['gender'] == target_gender)
             ].copy()
+
+        # 후보자가 전혀 없는 경우 빈 리스트 반환
+        if len(candidates) == 0:
+            return []
 
         # 3. 유사도 계산
         candidate_vecs = self.weighted_features_df.loc[candidates.index]
@@ -257,10 +276,17 @@ engine = None
 @app.on_event("startup")
 def startup_event():
     global engine
-    # 파일 경로가 맞는지 꼭 확인하세요!
-    dummy_file_path = "dormitory_users.json"
+    # 파일 경로를 data 폴더 안의 파일로 수정
+    dummy_file_path = "data/dormitory_users.json"
     engine = DormMatchAI_Server(dummy_file_path)
     engine.load_and_train()
+
+@app.get("/health")
+def health_check():
+    """헬스 체크 엔드포인트"""
+    if engine is None:
+        raise HTTPException(status_code=503, detail="Service Unavailable - Model not loaded")
+    return {"status": "healthy", "service": "matching-model"}
 
 @app.post("/recommend")
 def get_recommendation(user_input: StudentInput, count: int = 5, page: int = 1):
@@ -269,6 +295,18 @@ def get_recommendation(user_input: StudentInput, count: int = 5, page: int = 1):
     
     try:
         user_dict = user_input.dict()
+        
+        # 성별 값 정규화 (MALE/FEMALE -> 남성/여성)
+        gender_map = {
+            "MALE": "남성",
+            "FEMALE": "여성",
+            "male": "남성",
+            "female": "여성"
+        }
+        
+        if user_dict["gender"] in gender_map:
+            user_dict["gender"] = gender_map[user_dict["gender"]]
+        
         # count(몇 명씩)와 page(몇 번째 페이지)를 넘겨줍니다.
         recommendations = engine.recommend(user_dict, count=count, page=page)
         return recommendations

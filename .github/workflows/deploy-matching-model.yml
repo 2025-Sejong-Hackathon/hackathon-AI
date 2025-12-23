@@ -1,0 +1,99 @@
+name: Deploy Matching Model to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'model/**'
+      - 'data/dormitory_users.json'
+      - 'requirements.txt'
+      - 'Dockerfile'
+      - 'docker-compose.yml'
+      - '.github/workflows/deploy-matching-model.yml'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ap-northeast-2
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  ECR_REPO: hackathon-matching-model
+  IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hackathon-matching-model
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: AWS Role 설정
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/GitHubActionsECRDeployRole
+          aws-region: ${{ env.AWS_REGION }}
+          audience: sts.amazonaws.com
+
+      - name: ECR에 로그인
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Docker metadata 설정
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE_URI }}
+          tags: |
+            type=raw,value=latest
+            type=sha
+
+      - name: Docker Buildx 설정
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Docker 이미지 빌드 및 ECR에 Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+
+      - name: EC2 접속 및 배포
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_KEY }}
+          script: |
+            set -e
+            
+            # 환경 변수 설정
+            AWS_REGION=ap-northeast-2
+            ECR_REGISTRY=${{ steps.login-ecr.outputs.registry }}
+            ECR_REPO=hackathon-matching-model
+            
+            # ECR 로그인
+            aws ecr get-login-password --region ${AWS_REGION} \
+              | docker login --username AWS --password-stdin ${ECR_REGISTRY}
+            
+            # 배포 디렉토리로 이동 (없으면 생성)
+            mkdir -p /home/ubuntu/apps/hackathon-ai/prod
+            cd /home/ubuntu/apps/hackathon-ai/prod
+            
+            # 기존 컨테이너 중지 및 제거 후 새로운 이미지로 컨테이너 실행
+            docker stop hackathon-matching-model || true
+            docker rm hackathon-matching-model || true
+            docker pull ${ECR_REGISTRY}/${ECR_REPO}:latest
+            docker compose up -d hackathon-matching-model
+            docker image prune -f
+            
+            # 컨테이너 시작 대기
+            echo "Waiting for container to start..."
+            sleep 10
