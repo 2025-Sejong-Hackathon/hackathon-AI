@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths:
+      - 'code/**'
       - 'model/**'
       - 'data/dormitory_users.json'
       - 'requirements.txt'
