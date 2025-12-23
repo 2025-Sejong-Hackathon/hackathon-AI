@@ -77,14 +77,9 @@ for page in range(1, MAX_PAGE + 1):
 driver.quit()
 
 df = pd.DataFrame(results).drop_duplicates()
-df.to_csv("dorm_notices.csv", index=False, encoding="utf-8-sig")
 
-print(f"✅ 총 {len(df)}개 공지 수집 완료 (최대 {MAX_PAGE}페이지)")
 
-# =============================
-# JSON 저장 (⭐ 여기 추가)
-# =============================
-with open("dorm_notices.json", "w", encoding="utf-8") as f:
+with open("data/dorm_notices.json", "w", encoding="utf-8") as f:
     json.dump(
         df.to_dict(orient="records"),
         f,
