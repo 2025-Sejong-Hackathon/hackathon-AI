@@ -10,6 +10,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.preprocessing import MinMaxScaler
 import json
 from typing import List, Dict, Any
+import os
 
 # ======================
 # 매칭 모델 설정
@@ -362,6 +363,20 @@ def get_laundry_message():
     index = laundry_index(temp, humidity, rain)
     return {
         "laundry_message": laundry_comment(index)
+    }
+
+
+@app.get("/notices")
+def get_dorm_notices():
+    if not os.path.exists("data/dorm_notices.json"):
+        raise HTTPException(status_code=404, detail="공지 데이터가 없습니다.")
+
+    with open("data/dorm_notices.json", "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    return {
+        "count": len(data),
+        "notices": data
     }
 
 if __name__ == "__main__":

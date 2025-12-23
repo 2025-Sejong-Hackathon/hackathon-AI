@@ -80,7 +80,6 @@ for page in range(1, MAX_PAGE + 1):
 
         results.append({
             "title": title,
-            "url": link,
             "images": image_urls
         })
 
