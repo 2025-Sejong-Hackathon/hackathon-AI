@@ -1,5 +1,5 @@
 services:
-  hackathon-matching-model:
+  hackathon-ai:
     image: ${ECR_REGISTRY}/${ECR_REPO}:latest
     container_name: hackathon-ai
     restart: unless-stopped
