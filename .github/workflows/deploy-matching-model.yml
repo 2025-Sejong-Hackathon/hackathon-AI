@@ -15,8 +15,8 @@ on:
 env:
   AWS_REGION: ap-northeast-2
   AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-  ECR_REPO: hackathon-matching-model
-  IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hackathon-matching-model
+  ECR_REPO: hackathon-ai
+  IMAGE_URI: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-2.amazonaws.com/hackathon-ai
 
 permissions:
   id-token: write
