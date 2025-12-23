@@ -378,6 +378,28 @@ def get_dorm_notices():
         "notices": data
     }
 
+@app.get("/cafetria")
+def get_cafeteria_menus():
+    # 크롤러가 저장하는 파일 경로 (파일명 확인 필요)
+    file_path = "data/cafeteria_menu.json" 
+    
+    # 1. 파일 존재 여부 확인
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="식단 데이터가 없습니다.")
+
+    try:
+        # 2. JSON 파일 읽기
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        # 3. 데이터 반환 (요청하신 형식에 맞춤)
+        return {
+            "count": len(data),
+            "menus": data
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"데이터를 읽는 중 오류가 발생했습니다: {str(e)}")
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8002)
