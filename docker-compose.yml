@@ -1,0 +1,24 @@
+services:
+  hackathon-ai:
+    image: ${ECR_REGISTRY}/${ECR_REPO}:latest
+    container_name: hackathon-ai
+    restart: unless-stopped
+    ports:
+      - "8002:8002"
+    networks:
+      - hackathon-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  hackathon-network:
+    driver: bridge
