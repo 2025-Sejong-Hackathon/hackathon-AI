@@ -365,7 +365,6 @@ def get_laundry_message():
         "laundry_message": laundry_comment(index)
     }
 
-
 @app.get("/notices")
 def get_dorm_notices():
     if not os.path.exists("data/dorm_notices.json"):
