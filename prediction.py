@@ -3,14 +3,10 @@ from lightgbm import LGBMClassifier
 from sklearn.model_selection import train_test_split
 import joblib
 
-# =============================
 # 1. 원본 데이터 로드
-# =============================
 df = pd.read_csv("data/laundry_usage_mock.csv")
 
-# =============================
 # 2. 요일 × 시간 slot_df 생성
-# =============================
 records = []
 
 for room in ["male", "female"]:
@@ -36,16 +32,13 @@ for room in ["male", "female"]:
 
 slot_df = pd.DataFrame(records)
 
-# =============================
 # 3. 혼잡도 1~10 생성
-# =============================
 slot_df["congestion"] = (
     pd.qcut(slot_df["weighted_usage"], q=10, labels=False) + 1
 )
 
-# =============================
+
 # 4. Feature Engineering
-# =============================
 slot_df["is_weekend"] = slot_df["day_of_week"].isin([5, 6]).astype(int)
 slot_df["room_code"] = slot_df["room_type"].map({"male": 0, "female": 1})
 
@@ -74,9 +67,7 @@ FEATURES = [
 X = slot_df[FEATURES]
 y = slot_df["congestion"]
 
-# =============================
 # 5. 모델 학습
-# =============================
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
@@ -91,9 +82,7 @@ model = LGBMClassifier(
 
 model.fit(X_train, y_train)
 
-# =============================
 # 6. 저장
-# =============================
 slot_df.to_csv("data/slot_df.csv", index=False)
 joblib.dump(model, "model/congestion_model.pkl")
 

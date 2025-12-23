@@ -1,9 +1,7 @@
 import pandas as pd
 import joblib
 
-# =============================
 # 1. 모델 & 데이터 로드
-# =============================
 model = joblib.load("model/congestion_model.pkl")
 slot_df = pd.read_csv("data/slot_df.csv")
 
@@ -26,10 +24,7 @@ DAY_NAME = {
     6: "일"
 }
 
-# =============================
 # 2. slot_df 기반 예측
-# (학습 때와 같은 분포의 입력 사용)
-# =============================
 results = []
 
 for _, row in slot_df.iterrows():
@@ -54,13 +49,10 @@ for _, row in slot_df.iterrows():
 
 pred_df = pd.DataFrame(results)
 
-# =============================
 # 3. 결과 확인
-# =============================
 print("🔍 혼잡도 예측 결과 (상위 20개)")
-print(pred_df.head(20))
+print(pred_df)
 
-# 필요하면 저장
 pred_df.to_csv("data/predicted_congestion.csv", index=False)
 
 print("✅ slot_df 기반 혼잡도 예측 완료")
